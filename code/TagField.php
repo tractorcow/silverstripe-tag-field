@@ -13,14 +13,20 @@ class TagField extends DropdownField {
 	protected $relationTitleField;
 
 	/**
+	 * @var mixed
+	 */
+	protected $selectedValues;
+
+	/**
 	 * @param string      $name
 	 * @param null|string $title
 	 * @param array       $source
 	 * @param string      $value
-	 * @param null|string $relationTitleField
+	 * @param string      $relationTitleField
 	 */
-	public function __construct($name, $title = null, $source = array(), $value = '', $relationTitleField = null) {
+	public function __construct($name, $title = null, $source = array(), $value = '', $relationTitleField = 'Title') {
 		$this->relationTitleField = $relationTitleField;
+		$this->selectedValues = $value;
 
 		parent::__construct($name, $title, $source, $value);
 	}
@@ -44,7 +50,43 @@ class TagField extends DropdownField {
 
 		$this->setName(trim($this->name, '[]') . '[]');
 
+		$options = $this->getOptions();
+
+		$this->setAttribute('data-selected-values', join(',', $options));
+
 		return parent::Field($properties);
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getOptions() {
+		$source = $this->getSource();
+
+		$selectedOptions = array();
+
+		if(is_string($this->selectedValues)) {
+			$selectedOptions = explode(',', $this->selectedValues);
+			$selectedOptions = array_flip($selectedOptions);
+		}
+
+		if($this->selectedValues instanceof SS_Map) {
+			foreach($this->selectedValues as $key => $value) {
+				$selectedOptions[$key] = $value;
+			}
+		}
+
+		$options = array();
+
+		if($source) {
+			foreach($source as $value => $title) {
+				if(in_array($value, array_keys($selectedOptions))) {
+					$options[] = $value;
+				}
+			}
+		}
+
+		return $options;
 	}
 
 	/**
@@ -56,18 +98,12 @@ class TagField extends DropdownField {
 	 * @param DataObjectInterface $record
 	 */
 	public function saveInto(DataObjectInterface $record) {
-		if(!$record) {
-			goto saveInto;
-		}
+		parent::saveInto($record);
 
 		$values = $this->Value();
 
-		if(empty($values)) {
-			goto saveInto;
-		}
-
-		if(empty($this->relationTitleField)) {
-			goto saveInto;
+		if(empty($values) || empty($record) || empty($this->relationTitleField)) {
+			return;
 		}
 
 		$name = trim($this->name, '[]');
@@ -81,8 +117,9 @@ class TagField extends DropdownField {
 				if(!is_numeric($value)) {
 					$instance = new $class();
 					$instance->{$this->relationTitleField} = $value;
+					$instance->write();
 
-					$values[$i] = $instance->write();
+					$values[$i] = $instance->ID;
 				}
 			}
 
@@ -90,10 +127,5 @@ class TagField extends DropdownField {
 		} else {
 			$record->$name = implode(',', $values);
 		}
-
-		goto saveInto;
-
-		saveInto:
-		parent::saveInto($record);
 	}
 }

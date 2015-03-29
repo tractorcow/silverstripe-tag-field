@@ -8,23 +8,46 @@
 	 * We have to remove it before selectively applying select2, or
 	 * we'll see an extra field where there should be only one.
 	 */
-
 	$.fn.chosenDestroy = function () {
-		$(this).show().removeClass('chzn-done');
-		$(this).next().remove();
+		$(this)
+			.show()
+			.removeClass('chzn-done')
+			.removeClass('has-chzn')
+			.next()
+				.remove();
 
 		return $(this);
 	};
 
-	$(function () {
-		setTimeout(function() {
-			$('.silverstripe-tag-field')
-				.chosenDestroy()
-				.select2({
-					'tags': true,
-					'tokenSeparators': [',', ' ']
-				});
-		}, 0);
-	});
+	$.entwine('ss', function($) {
 
+		$('.silverstripe-tag-field').entwine({
+			'onadd': function() {
+				var $this = $(this);
+
+				/*
+				 * Delay a cycle so we don't see 2 inputs...
+				 */
+				setTimeout(function () {
+					$this.chosenDestroy()
+						.select2({
+							'tags': true,
+							'tokenSeparators': [',', ' ']
+						});
+
+					/*
+					 * Delay a cycle so select2 is initialised before
+					 * selecting values.
+					 */
+					setTimeout(function () {
+						if ($this.attr('data-selected-values')) {
+							var values = $this.attr('data-selected-values');
+
+							$this.select2('val', values.split(','));
+						}
+					}, 0);
+				}, 0);
+			}
+		});
+	});
 })(jQuery);
