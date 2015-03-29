@@ -1,0 +1,27 @@
+{
+    "name": "assertchris/silverstripe-tag-field",
+    "description": "Tag field for Silverstripe",
+    "type": "silverstripe-module",
+    "keywords": [
+        "silverstripe",
+        "tag",
+        "field"
+    ],
+    "authors": [
+        {
+            "name": "Christopher Pitt",
+            "email": "cgpitt@gmail.com",
+            "homepage": "http://github.com/assertchris",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "http://github.com/assertchris/silverstripe-tagfield/issues"
+    },
+    "require": {
+        "silverstripe/framework": "~3.1"
+    },
+    "extra": {
+        "installer-name": "tag-field"
+    }
+}
