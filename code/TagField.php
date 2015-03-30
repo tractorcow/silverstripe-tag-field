@@ -43,16 +43,20 @@ class TagField extends DropdownField {
 		Requirements::javascript(TAG_FIELD_DIR . '/js/select2.js');
 
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
+		Requirements::javascript(THIRDPARTY_DIR . '/jquery-entwine/dist/jquery.entwine-dist.js');
 
 		$this->addExtraClass('silverstripe-tag-field');
 
 		$this->setAttribute('multiple', 'multiple');
 
-		$this->setName(trim($this->name, '[]') . '[]');
-
 		$options = $this->getOptions();
 
-		$this->setAttribute('data-selected-values', join(',', $options));
+		$this->setAttribute(
+			'data-selected-values',
+			join(',', $options)
+		);
+
+		$this->name = trim($this->name, '[]') . '[]';
 
 		return parent::Field($properties);
 	}
@@ -61,18 +65,27 @@ class TagField extends DropdownField {
 	 * @return array
 	 */
 	protected function getOptions() {
-		$source = $this->getSource();
+		$value = $this->selectedValues;
 
-		$selectedOptions = array();
-
-		if(is_string($this->selectedValues)) {
-			$selectedOptions = explode(',', $this->selectedValues);
-			$selectedOptions = array_flip($selectedOptions);
+		if(!is_string($value) && !is_array($value) && !($value instanceof Traversable)) {
+			throw new InvalidArgumentException('Value must be string, array or Traversable');
 		}
 
-		if($this->selectedValues instanceof SS_Map) {
-			foreach($this->selectedValues as $key => $value) {
-				$selectedOptions[$key] = $value;
+		$source = $this->getSource();
+
+		$selected = array();
+
+		if(is_string($value)) {
+			$selected = explode(',', $value);
+		}
+
+		if(is_array($value)) {
+			$selected = $value;
+		}
+
+		if($value instanceof Traversable) {
+			foreach($value as $key => $noop) {
+				$selected[] = $key;
 			}
 		}
 
@@ -80,7 +93,7 @@ class TagField extends DropdownField {
 
 		if($source) {
 			foreach($source as $value => $title) {
-				if(in_array($value, array_keys($selectedOptions))) {
+				if(in_array($value, $selected)) {
 					$options[] = $value;
 				}
 			}
@@ -100,13 +113,13 @@ class TagField extends DropdownField {
 	public function saveInto(DataObjectInterface $record) {
 		parent::saveInto($record);
 
+		$name = trim($this->name, '[]');
+
 		$values = $this->Value();
 
 		if(empty($values) || empty($record) || empty($this->relationTitleField)) {
 			return;
 		}
-
-		$name = trim($this->name, '[]');
 
 		if($record->hasMethod($name)) {
 			$relation = $record->$name();
